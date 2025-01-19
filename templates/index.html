@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Application</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        #camera-section {
+            display: none;
+            margin-top: 20px;
+        }
+        #video {
+            width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #loading-spinner {
+            display: none;
+        }
+        #close-camera {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 30px;
+            color: red;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">OCR Document Scanner</h1>
+
+        <!-- Form to upload a file -->
+        <form action="/upload" method="POST" enctype="multipart/form-data" id="upload-form">
+            <div class="mb-3">
+                <label for="document" class="form-label">Upload Document</label>
+                <input class="form-control" type="file" name="document" id="document" accept=".pdf,.jpg,.jpeg,.png,.xls,.xlsx,.docx">
+            </div>
+            <button type="submit" class="btn btn-primary">Scan Document</button>
+
+            <!-- Camera button -->
+            <button type="button" id="cameraButton" class="btn btn-secondary ms-3">Use Camera</button>
+        </form>
+
+        <!-- Camera capture section -->
+        <div id="camera-section">
+            <h2 class="text-center">Capture Document with Camera</h2>
+            <video id="video" autoplay></video>
+            <button id="capture" class="btn btn-success mt-3">Capture Image</button>
+            <span id="close-camera">&times;</span>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading-spinner" class="text-center mt-3">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Accessing the camera
+        const video = document.getElementById('video');
+        const captureButton = document.getElementById('capture');
+        const cameraSection = document.getElementById('camera-section');
+        const cameraButton = document.getElementById('cameraButton');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const closeCameraButton = document.getElementById('close-camera');
+        let mediaStream;
+
+        async function startCamera() {
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = mediaStream;
+            } catch (err) {
+                console.error("Error accessing the camera: ", err);
+            }
+        }
+
+        // Toggle camera section visibility
+        cameraButton.onclick = function() {
+            if (cameraSection.style.display === 'none') {
+                cameraSection.style.display = 'block';
+                startCamera();
+            } else {
+                cameraSection.style.display = 'none';
+                if (mediaStream) {
+                    const tracks = mediaStream.getTracks();
+                    tracks.forEach(track => track.stop());
+                }
+            }
+        };
+
+        // Close camera section
+        closeCameraButton.onclick = function() {
+            cameraSection.style.display = 'none';
+            if (mediaStream) {
+                const tracks = mediaStream.getTracks();
+                tracks.forEach(track => track.stop());
+            }
+        };
+
+        // Capture image after 5 seconds
+        captureButton.onclick = function() {
+            loadingSpinner.style.display = 'block';
+            setTimeout(() => {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageData = canvas.toDataURL('image/png');
+
+                // Send captured image to server for OCR
+                fetch('/upload_camera', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ image: imageData })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert("OCR Text: " + data.text);
+                })
+                .finally(() => {
+                    loadingSpinner.style.display = 'none';
+                });
+            }, 5000);
+        };
+    </script>
+</body>
+</html>

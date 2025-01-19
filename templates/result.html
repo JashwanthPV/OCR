@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Result</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Extracted Text</h1>
+        <div class="card">
+            <div class="card-body">
+                <pre>{{ text }}</pre>
+            </div>
+        </div>
+        <form action="/download_txt" method="POST">
+            <input type="hidden" name="text" value="{{ text }}">
+            <button type="submit" class="btn btn-primary mt-3">Download as TXT</button>
+        </form>
+        <form action="/download_pdf" method="POST">
+            <input type="hidden" name="text" value="{{ text }}">
+            <button type="submit" class="btn btn-primary mt-3">Download as PDF</button>
+        </form>
+        <a href="/" class="btn btn-secondary mt-3">Upload Another Document</a>
+    </div>
+</body>
+</html>
